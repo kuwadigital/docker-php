@@ -303,3 +303,38 @@ db/
 ---
 
 Pour toute question, consultez le Makefile ou ouvrez une issue sur le dépôt.
+
+## Configuration Nginx pour public.local
+
+L'environnement Nginx est préconfiguré pour servir le domaine `public.local`.
+
+- **Fichier de configuration** : `docker/nginx/conf.d/public.conf`
+- **Racine du site** : `/var/www/html/public` (correspond à `./src/public` dans le projet)
+- **Accès** :
+    - Le serveur écoute sur le port 80 du conteneur (mappé sur `${APP_PORT}` côté hôte).
+    - Le nom de domaine attendu est `public.local`.
+
+### Ajouter public.local à votre fichier hosts
+
+Pour accéder à l'application via http://public.local, ajoutez la ligne suivante à votre `/etc/hosts` :
+
+```
+127.0.0.1   public.local
+```
+
+> **Note** : Sur certains systèmes, il peut être nécessaire d'utiliser `sudo` pour éditer ce fichier.
+
+### Structure de la configuration Nginx
+
+- **Fichiers statiques** : Servis directement (images, CSS, JS, etc.)
+- **PHP** : Les requêtes `.php` sont transmises au conteneur PHP-FPM
+- **Fallback** : Toute autre requête est redirigée vers `index.php` (utile pour les frameworks modernes)
+- **Logs** :
+    - Accès : `docker/logs/nginx/access.log`
+    - Erreurs : `docker/logs/nginx/error.log`
+
+Pour toute modification, éditez le fichier `docker/nginx/conf.d/public.conf` puis redémarrez le service Nginx :
+
+```bash
+docker-compose restart nginx
+```

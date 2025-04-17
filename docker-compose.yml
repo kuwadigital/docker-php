@@ -23,6 +23,7 @@ services:
     volumes:
       - ./src:/var/www/html:ro
       - ./docker/logs/nginx:/var/log/nginx
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
     ports:
       - "${APP_PORT}:80"                        # Expose le port 80 HTTP
 
