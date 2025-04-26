@@ -34,6 +34,25 @@ RUN apt-get update && apt-get install -y \
     mysqli \
     pgsql
 
+# Installation de l'extension GD
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libwebp-dev \
+    libxpm-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-xpm \
+    && docker-php-ext-install gd
+
+# Installation de l'extension curl
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    && docker-php-ext-install curl
+
+# Installation de l'extension rabbitmq
+RUN apt-get update && apt-get install -y \
+    librabbitmq-dev \
+    && pecl install amqp \
+    && docker-php-ext-enable amqp
 
 # Copie des fichiers de configuration PHP dans l'image
 COPY php.ini /usr/local/etc/php/conf.d/99-overrides.ini
