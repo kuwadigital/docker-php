@@ -34,7 +34,10 @@ docker-down:           ## Arrêter et supprimer les conteneurs (sans supprimer l
 # ——— Commandes d'accès aux conteneurs ———
 
 docker-shell-php:     ## Ouvrir un shell bash à l'intérieur du conteneur PHP
-	$(DOCKER_COMPOSE) exec php bash
+	$(DOCKER_COMPOSE) exec --user www-data php bash
+
+docker-shell-root-php:     ## Ouvrir un shell bash à l'intérieur du conteneur PHP en mode ROOT
+	$(DOCKER_COMPOSE) exec --user root php bash
 
 docker-logs:          ## Suivre les logs de tous les services
 	COMPOSE_PROFILES=mysql,postgres,mongo $(DOCKER_COMPOSE) logs -f --tail=100
