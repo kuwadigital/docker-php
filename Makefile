@@ -4,7 +4,7 @@ include docker/.env
 export $(shell sed -e 's/=.*//' docker/.env)
 endif
 
-DOCKER_COMPOSE = docker-compose -f docker-compose.yml
+DOCKER_COMPOSE = docker-compose -f ./docker/docker-compose.yml
 
 # ——— Commandes de build et démarrage ———
 

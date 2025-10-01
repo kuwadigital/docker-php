@@ -1,38 +1,38 @@
 services:
   php:
     build:
-      context: ./docker/php
+      context: ./php
       args:
         PHP_VERSION: ${PHP_VERSION}      # Version de PHP à utiliser (définie dans .env)
     env_file: 
-      - docker/.env                      # Charge les variables (ex: XDEBUG_MODE)
+      - .env                      # Charge les variables (ex: XDEBUG_MODE)
     environment:
       XDEBUG_MODE: ${XDEBUG_MODE}        # Active/désactive Xdebug (ex: "off" par défaut)
     volumes:
-      - ./src:/var/www/html            # Monte le code source de l'application
-      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/99-overrides.ini:ro    # Configuration PHP custom
-      - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/99-xdebug.ini:ro    # Configuration Xdebug custom
+      - ../src:/var/www/html            # Monte le code source de l'application
+      - ./php/php.ini:/usr/local/etc/php/conf.d/99-overrides.ini:ro    # Configuration PHP custom
+      - ./php/xdebug.ini:/usr/local/etc/php/conf.d/99-xdebug.ini:ro    # Configuration Xdebug custom
 
   nginx:
     build:
-      context: ./docker/nginx
+      context: ./nginx
     depends_on:
       - php
     volumes:
-      - ./src:/var/www/html:ro
-      - ./docker/logs/nginx:/var/log/nginx
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ../src:/var/www/html:ro
+      - ./logs/nginx:/var/log/nginx
+      - ./nginx/conf.d:/etc/nginx/conf.d
     ports:
       - "${APP_PORT}:80"                        # Expose le port 80 HTTP
 
   mysql:
     build:
-      context: ./docker/mysql
+      context: ./mysql
       args:
         MYSQL_VERSION: ${MYSQL_VERSION}
     profiles: ["mysql"]
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
@@ -40,12 +40,12 @@ services:
 
   postgres:
     build:
-      context: ./docker/postgres
+      context: ./postgres
       args:
         POSTGRES_VERSION: ${POSTGRES_VERSION}
     profiles: ["postgres"]
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -53,12 +53,12 @@ services:
 
   mongo:
     build:
-      context: ./docker/mongo
+      context: ./mongo
       args:
         MONGO_VERSION: ${MONGO_VERSION}
     profiles: ["mongo"]
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - mongo_data:/data/db
     ports:
@@ -66,11 +66,11 @@ services:
 
   redis:
     build:
-      context: ./docker/redis
+      context: ./redis
       args:
         REDIS_VERSION: ${REDIS_VERSION}
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - redis_data:/data
     ports:
@@ -78,12 +78,12 @@ services:
 
   mysql_test:
     build:
-      context: ./docker/mysql
+      context: ./mysql
       args:
         MYSQL_VERSION: ${MYSQL_VERSION}
     profiles: ["mysql"]
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - mysql_test_data:/var/lib/mysql
     ports:
@@ -91,12 +91,12 @@ services:
 
   postgres_test:
     build:
-      context: ./docker/postgres
+      context: ./postgres
       args:
         POSTGRES_VERSION: ${POSTGRES_VERSION}
     profiles: ["postgres"]
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     ports:
@@ -104,12 +104,12 @@ services:
 
   mongo_test:
     build:
-      context: ./docker/mongo
+      context: ./mongo
       args:
         MONGO_VERSION: ${MONGO_VERSION}
     profiles: ["mongo"]
     env_file:
-      - docker/.env
+      - .env
     volumes:
       - mongo_test_data:/data/db
     ports:
