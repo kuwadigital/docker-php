@@ -1,4 +1,4 @@
-# IV-GIG Docker PHP Environment
+# Docker PHP Environment
 
 Ce projet fournit un environnement de développement complet pour des applications PHP avec support multi-base de données (MySQL, PostgreSQL, MongoDB, Redis) via Docker Compose. Il inclut également Nginx comme serveur web et Adminer pour l'administration des bases de données.
 
