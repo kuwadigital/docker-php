@@ -1,0 +1,53 @@
+server {
+    listen 80 default_server;
+    server_name _;
+    root /var/www/html/webroot;
+
+    index index.php index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
+    gzip_vary on;
+    gzip_min_length 1000;
+
+    # Upload limit
+    client_max_body_size 64M;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Block sensitive files
+    location ~ /\.env { deny all; return 404; }
+    location ~ /\.git { deny all; return 404; }
+    location ~ /\.htaccess { deny all; return 404; }
+    location ~ /composer\.(json|lock)$ { deny all; return 404; }
+
+    # Logs
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log warn;
+
+    # Static files
+    location ~* \.(jpg|jpeg|png|gif|svg|css|js|ico|woff2?|ttf|eot|webp|avif)$ {
+        try_files $uri =404;
+        expires 1d;
+        access_log off;
+    }
+
+    # PHP handling
+    location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_pass php:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+    }
+
+    # Front controller
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+}
