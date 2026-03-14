@@ -10,10 +10,36 @@ Docker-based PHP development environment (app wrapper) with multi-database suppo
 
 ```bash
 cp docker/.env.example docker/.env   # Create local env config
+# Edit docker/.env to set COMPOSE_PROJECT_NAME and APP_PORT (see Multi-Instance below)
 make docker-build                     # Build all Docker images
 make docker-start-mysql               # Start environment
 # Open http://localhost → default landing page
 ```
+
+### Multi-Instance Setup
+
+To run multiple instances simultaneously (e.g., different frameworks side by side), each clone needs a unique `COMPOSE_PROJECT_NAME` and non-conflicting ports in `docker/.env`:
+
+```env
+# Instance 1 (default)
+COMPOSE_PROJECT_NAME=app1
+APP_PORT=80
+
+# Instance 2
+COMPOSE_PROJECT_NAME=app2
+APP_PORT=8080
+MYSQL_PORT=3316
+MYSQL_TEST_PORT=3317
+REDIS_PORT=6389
+ADMINER_PORT=8091
+PORT_MAIL_SMTP=1035
+PORT_MAIL_HTTP=8035
+PORT_RABBITMQ_LISTENER=5682
+PORT_RABBITMQ_TCP_LISTENER=5683
+PORT_RABBITMQ_MANAGEMENT=15682
+```
+
+`COMPOSE_PROJECT_NAME` isolates containers, volumes, and networks per instance. All ports must be unique across instances to avoid conflicts.
 
 ## Common Commands
 

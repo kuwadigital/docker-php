@@ -215,7 +215,7 @@ init-laravel-app: ## Install Laravel (VERSION=11.*)
 	$(EXEC_PHP) php artisan key:generate
 	@echo ""
 	@echo "✔ Laravel installed successfully!"
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
 
 .PHONY: init-symfony-app
 init-symfony-app: ## Install Symfony (VERSION=7.*)
@@ -232,7 +232,7 @@ init-symfony-app: ## Install Symfony (VERSION=7.*)
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ Symfony installed successfully!"
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
 
 .PHONY: init-codeigniter-app
 init-codeigniter-app: ## Install CodeIgniter 4 (VERSION=4.*)
@@ -255,7 +255,7 @@ init-codeigniter-app: ## Install CodeIgniter 4 (VERSION=4.*)
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ CodeIgniter 4 installed successfully!"
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
 
 .PHONY: init-cakephp-app
 init-cakephp-app: ## Install CakePHP (VERSION=5.*)
@@ -275,7 +275,7 @@ init-cakephp-app: ## Install CakePHP (VERSION=5.*)
 	$(EXEC_PHP) bin/cake cache clear_all
 	@echo ""
 	@echo "✔ CakePHP installed successfully!"
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
 
 .PHONY: init-slim-app
 init-slim-app: ## Install Slim Framework (VERSION=4.*)
@@ -288,7 +288,7 @@ init-slim-app: ## Install Slim Framework (VERSION=4.*)
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ Slim installed successfully!"
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
 
 .PHONY: init-laminas-app
 init-laminas-app: ## Install Laminas MVC
@@ -302,7 +302,7 @@ init-laminas-app: ## Install Laminas MVC
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ Laminas MVC installed successfully!"
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
 
 .PHONY: init-laravel-api
 init-laravel-api: ## Install Laravel API with API Platform + Book example
@@ -338,9 +338,9 @@ init-laravel-api: ## Install Laravel API with API Platform + Book example
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ Laravel API with API Platform installed successfully!"
-	@echo "  → API:  http://localhost/api"
-	@echo "  → Docs: http://localhost/api/docs"
-	@echo "  → Book: http://localhost/api/books"
+	@echo "  → API:  http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)/api"
+	@echo "  → Docs: http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)/api/docs"
+	@echo "  → Book: http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)/api/books"
 
 .PHONY: init-symfony-api
 init-symfony-api: ## Install Symfony API with API Platform + Book example
@@ -365,9 +365,9 @@ init-symfony-api: ## Install Symfony API with API Platform + Book example
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ Symfony API with API Platform installed successfully!"
-	@echo "  → API:  http://localhost/api"
-	@echo "  → Docs: http://localhost/api/docs"
-	@echo "  → Book: http://localhost/api/books"
+	@echo "  → API:  http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)/api"
+	@echo "  → Docs: http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)/api/docs"
+	@echo "  → Book: http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)/api/books"
 
 .PHONY: init-reset
 init-reset: ## Reset src/ to default landing page
@@ -381,4 +381,4 @@ init-reset: ## Reset src/ to default landing page
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
 	@echo "✔ Reset to default landing page."
-	@echo "  → http://localhost"
+	@echo "  → http://localhost$(if $(filter-out 80,$(APP_PORT)),:$(APP_PORT),)"
