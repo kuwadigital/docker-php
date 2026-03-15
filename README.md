@@ -99,7 +99,7 @@ PORT_RABBITMQ_MANAGEMENT=15682
 Chaque commande de démarrage active un profil de base de données + le profil `dev` (Adminer, Mailpit, RabbitMQ).
 
 ```bash
-make docker-start-mysql        # MySQL (défaut, alias: make docker-start)
+make docker-start-mysql        # MySQL
 make docker-start-postgres     # PostgreSQL
 make docker-start-mongo        # MongoDB
 ```
@@ -110,9 +110,8 @@ make docker-start-mongo        # MongoDB
 
 ```bash
 make docker-stop               # Arrêter les conteneurs
-make docker-restart             # Redémarrer les conteneurs
-make docker-down                # Arrêter et supprimer les conteneurs (volumes conservés)
-make docker-clean               # Reset complet : conteneurs + volumes supprimés
+make docker-down               # Arrêter et supprimer les conteneurs (volumes conservés)
+make docker-clean              # Reset complet : conteneurs + volumes supprimés
 ```
 
 ---
@@ -186,14 +185,6 @@ make docker-mysql-cli          # Shell MySQL
 make docker-psql-cli           # Shell PostgreSQL
 make docker-mongo-cli          # Shell MongoDB
 make docker-redis-cli          # Shell Redis
-```
-
-### CLI (bases de test)
-
-```bash
-make docker-mysql-test-cli     # Shell MySQL test
-make docker-psql-test-cli      # Shell PostgreSQL test
-make docker-mongo-test-cli     # Shell MongoDB test
 ```
 
 ### Import / Export

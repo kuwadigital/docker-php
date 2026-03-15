@@ -49,11 +49,10 @@ All operations go through Make. Run `make help` to see all available commands.
 
 ```bash
 make docker-build              # Build all Docker images
-make docker-start-mysql        # Start with MySQL profile (default)
+make docker-start-mysql        # Start with MySQL profile
 make docker-start-postgres     # Start with PostgreSQL profile
 make docker-start-mongo        # Start with MongoDB profile
 make docker-stop               # Stop containers
-make docker-restart            # Restart containers
 make docker-down               # Stop and remove containers (keeps volumes)
 make docker-clean              # Full reset including volumes
 ```

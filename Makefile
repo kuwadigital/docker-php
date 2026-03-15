@@ -9,6 +9,7 @@ endif
 DOCKER_COMPOSE = docker compose -f ./docker/docker-compose.yml
 EXEC_PHP = $(DOCKER_COMPOSE) exec php
 EXEC_PHP_ROOT = $(DOCKER_COMPOSE) exec --user root php
+ALL_PROFILES = mysql,postgres,mongo,dev
 
 .DEFAULT_GOAL := help
 
@@ -24,9 +25,6 @@ help: ## Show this help
 docker-build: ## Build all Docker images
 	$(DOCKER_COMPOSE) build
 
-.PHONY: docker-start
-docker-start: docker-start-mysql ## Start environment with MySQL (default)
-
 .PHONY: docker-start-mysql
 docker-start-mysql: ## Start environment with MySQL
 	COMPOSE_PROFILES=mysql,dev $(DOCKER_COMPOSE) up -d
@@ -41,19 +39,15 @@ docker-start-mongo: ## Start environment with MongoDB
 
 .PHONY: docker-stop
 docker-stop: ## Stop containers
-	COMPOSE_PROFILES=mysql,postgres,mongo,dev $(DOCKER_COMPOSE) stop
-
-.PHONY: docker-restart
-docker-restart: ## Restart containers
-	COMPOSE_PROFILES=mysql,postgres,mongo,dev $(DOCKER_COMPOSE) restart
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) stop
 
 .PHONY: docker-down
 docker-down: ## Stop and remove containers (keeps volumes)
-	COMPOSE_PROFILES=mysql,postgres,mongo,dev $(DOCKER_COMPOSE) down
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) down
 
 .PHONY: docker-clean
 docker-clean: ## Full reset: stop, remove containers and volumes
-	COMPOSE_PROFILES=mysql,postgres,mongo,dev $(DOCKER_COMPOSE) down -v
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) down -v
 
 # ——— Container Access & Logs ———
 
@@ -67,11 +61,11 @@ docker-shell-root-php: ## Open a root shell in the PHP container
 
 .PHONY: docker-logs
 docker-logs: ## Stream logs from all containers
-	COMPOSE_PROFILES=mysql,postgres,mongo,dev $(DOCKER_COMPOSE) logs -f --tail=100
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) logs -f --tail=100
 
 .PHONY: docker-ps
 docker-ps: ## List running containers
-	COMPOSE_PROFILES=mysql,postgres,mongo,dev $(DOCKER_COMPOSE) ps
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) ps
 
 # ——— Application ———
 
@@ -104,18 +98,6 @@ docker-mongo-cli: ## Open MongoDB shell
 .PHONY: docker-redis-cli
 docker-redis-cli: ## Open Redis shell
 	$(DOCKER_COMPOSE) exec redis redis-cli
-
-.PHONY: docker-mysql-test-cli
-docker-mysql-test-cli: ## Open MySQL test shell
-	$(DOCKER_COMPOSE) exec mysql_test mysql -u$(MYSQL_USER) -p$(MYSQL_PASSWORD) $(MYSQL_DATABASE)
-
-.PHONY: docker-psql-test-cli
-docker-psql-test-cli: ## Open PostgreSQL test shell
-	$(DOCKER_COMPOSE) exec postgres_test psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
-
-.PHONY: docker-mongo-test-cli
-docker-mongo-test-cli: ## Open MongoDB test shell
-	$(DOCKER_COMPOSE) exec mongo_test mongosh -u $(MONGO_INITDB_ROOT_USERNAME) -p $(MONGO_INITDB_ROOT_PASSWORD) --authenticationDatabase admin
 
 # ——— Database Import/Export ———
 
@@ -187,14 +169,7 @@ define fix_permissions
 	$(EXEC_PHP_ROOT) chown -R www-data:www-data /var/www/html
 endef
 
-.PHONY: init-laravel-app
-init-laravel-app: ## Install Laravel (VERSION=11.*)
-	$(call check_php_running)
-	$(call confirm_action)
-	$(call clean_src)
-	$(EXEC_PHP) composer create-project laravel/laravel . $(or $(VERSION),)
-	$(call fix_permissions)
-	$(EXEC_PHP_ROOT) chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+define configure_laravel_env
 	$(EXEC_PHP) sed -i \
 		-e 's|^#\? *DB_CONNECTION=.*|DB_CONNECTION=mysql|' \
 		-e 's|^#\? *DB_HOST=.*|DB_HOST=mysql|' \
@@ -210,6 +185,24 @@ init-laravel-app: ## Install Laravel (VERSION=11.*)
 		-e 's|^#\? *MAIL_HOST=.*|MAIL_HOST=mailpit|' \
 		-e 's|^#\? *MAIL_PORT=.*|MAIL_PORT=1025|' \
 		.env
+endef
+
+define configure_symfony_env
+	$(EXEC_PHP) sh -c 'grep -q "^DATABASE_URL=" .env && sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"$(1)\"|" .env || echo "DATABASE_URL=\"$(1)\"" >> .env'
+	$(EXEC_PHP) sh -c 'grep -q "^MAILER_DSN=" .env && sed -i "s|^MAILER_DSN=.*|MAILER_DSN=smtp://mailpit:1025|" .env || echo "MAILER_DSN=smtp://mailpit:1025" >> .env'
+	$(EXEC_PHP) sh -c 'grep -q "^REDIS_URL=" .env && sed -i "s|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|" .env || echo "REDIS_URL=redis://redis:6379" >> .env'
+	$(EXEC_PHP) sh -c 'grep -q "^MESSENGER_TRANSPORT_DSN=" .env && sed -i "s|^MESSENGER_TRANSPORT_DSN=.*|MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages|" .env || echo "MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages" >> .env'
+endef
+
+.PHONY: init-laravel-app
+init-laravel-app: ## Install Laravel (VERSION=11.*)
+	$(call check_php_running)
+	$(call confirm_action)
+	$(call clean_src)
+	$(EXEC_PHP) composer create-project laravel/laravel . $(or $(VERSION),)
+	$(call fix_permissions)
+	$(EXEC_PHP_ROOT) chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+	$(call configure_laravel_env)
 	cp docker/nginx/templates/public.conf.template docker/nginx/conf.d/app.conf
 	$(DOCKER_COMPOSE) restart nginx
 	$(EXEC_PHP) php artisan key:generate
@@ -224,10 +217,7 @@ init-symfony-app: ## Install Symfony (VERSION=7.*)
 	$(call clean_src)
 	$(EXEC_PHP) composer create-project symfony/skeleton . $(or $(VERSION),)
 	$(call fix_permissions)
-	$(EXEC_PHP) sh -c 'grep -q "^DATABASE_URL=" .env && sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"mysql://app:app@mysql:3306/app_db?charset=utf8mb4\"|" .env || echo "DATABASE_URL=\"mysql://app:app@mysql:3306/app_db?charset=utf8mb4\"" >> .env'
-	$(EXEC_PHP) sh -c 'grep -q "^MAILER_DSN=" .env && sed -i "s|^MAILER_DSN=.*|MAILER_DSN=smtp://mailpit:1025|" .env || echo "MAILER_DSN=smtp://mailpit:1025" >> .env'
-	$(EXEC_PHP) sh -c 'grep -q "^REDIS_URL=" .env && sed -i "s|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|" .env || echo "REDIS_URL=redis://redis:6379" >> .env'
-	$(EXEC_PHP) sh -c 'grep -q "^MESSENGER_TRANSPORT_DSN=" .env && sed -i "s|^MESSENGER_TRANSPORT_DSN=.*|MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages|" .env || echo "MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages" >> .env'
+	$(call configure_symfony_env,mysql://app:app@mysql:3306/app_db?charset=utf8mb4)
 	cp docker/nginx/templates/public.conf.template docker/nginx/conf.d/app.conf
 	$(DOCKER_COMPOSE) restart nginx
 	@echo ""
@@ -312,21 +302,7 @@ init-laravel-api: ## Install Laravel API with API Platform + Book example
 	$(EXEC_PHP) composer create-project laravel/laravel . $(or $(VERSION),)
 	$(call fix_permissions)
 	$(EXEC_PHP_ROOT) chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-	$(EXEC_PHP) sed -i \
-		-e 's|^#\? *DB_CONNECTION=.*|DB_CONNECTION=mysql|' \
-		-e 's|^#\? *DB_HOST=.*|DB_HOST=mysql|' \
-		-e 's|^#\? *DB_PORT=.*|DB_PORT=3306|' \
-		-e 's|^#\? *DB_DATABASE=.*|DB_DATABASE=app_db|' \
-		-e 's|^#\? *DB_USERNAME=.*|DB_USERNAME=app|' \
-		-e 's|^#\? *DB_PASSWORD=.*|DB_PASSWORD=app|' \
-		-e 's|^#\? *REDIS_HOST=.*|REDIS_HOST=redis|' \
-		-e 's|^#\? *REDIS_PORT=.*|REDIS_PORT=6379|' \
-		-e 's|^#\? *CACHE_STORE=.*|CACHE_STORE=redis|' \
-		-e 's|^#\? *SESSION_DRIVER=.*|SESSION_DRIVER=redis|' \
-		-e 's|^#\? *MAIL_MAILER=.*|MAIL_MAILER=smtp|' \
-		-e 's|^#\? *MAIL_HOST=.*|MAIL_HOST=mailpit|' \
-		-e 's|^#\? *MAIL_PORT=.*|MAIL_PORT=1025|' \
-		.env
+	$(call configure_laravel_env)
 	$(EXEC_PHP) php artisan key:generate
 	$(EXEC_PHP) composer require api-platform/laravel
 	$(EXEC_PHP) php artisan api-platform:install
@@ -352,10 +328,7 @@ init-symfony-api: ## Install Symfony API with API Platform + Book example
 	$(EXEC_PHP) composer require api
 	$(EXEC_PHP) composer require symfony/orm-pack
 	$(EXEC_PHP) composer require --dev symfony/maker-bundle
-	$(EXEC_PHP) sh -c 'grep -q "^DATABASE_URL=" .env && sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"mysql://app:app@mysql:3306/app_db?serverVersion=8.4\&charset=utf8mb4\"|" .env || echo "DATABASE_URL=\"mysql://app:app@mysql:3306/app_db?serverVersion=8.4\&charset=utf8mb4\"" >> .env'
-	$(EXEC_PHP) sh -c 'grep -q "^MAILER_DSN=" .env && sed -i "s|^MAILER_DSN=.*|MAILER_DSN=smtp://mailpit:1025|" .env || echo "MAILER_DSN=smtp://mailpit:1025" >> .env'
-	$(EXEC_PHP) sh -c 'grep -q "^REDIS_URL=" .env && sed -i "s|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|" .env || echo "REDIS_URL=redis://redis:6379" >> .env'
-	$(EXEC_PHP) sh -c 'grep -q "^MESSENGER_TRANSPORT_DSN=" .env && sed -i "s|^MESSENGER_TRANSPORT_DSN=.*|MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages|" .env || echo "MESSENGER_TRANSPORT_DSN=amqp://guest:guest@rabbitmq:5672/%2f/messages" >> .env'
+	$(call configure_symfony_env,mysql://app:app@mysql:3306/app_db?serverVersion=8.4\&charset=utf8mb4)
 	$(EXEC_PHP_ROOT) mkdir -p /var/www/html/src/Entity
 	$(DOCKER_COMPOSE) cp docker/scaffolds/symfony-api/Book.php php:/var/www/html/src/Entity/Book.php
 	$(call fix_permissions)
